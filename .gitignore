@@ -1,0 +1,23 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+
+# Data files 
+data/raw/*.csv
+data/raw/*.xlsx
+!data/raw/.gitkeep
+
+# Power BI temporary files
+*.pbix.*
+*.tmp
+
+# IDE
+.vscode/
+.idea/
+
+# OS junk
+.DS_Store
+Thumbs.db
