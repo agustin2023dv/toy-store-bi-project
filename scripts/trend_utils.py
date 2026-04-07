@@ -33,9 +33,14 @@ def fit_linear_trend(df: pd.DataFrame, metric: str):
         Keys: slope, intercept, r_value, r_squared, p_value, std_err,
         fitted (np.ndarray of predicted values), time_idx (numeric index).
     """
-    y = df[metric].values
+    y = np.asarray(df[metric].values, dtype=float)
     x = np.arange(len(y))
-    slope, intercept, r_value, p_value, std_err = sp_stats.linregress(x, y)
+    _s, _i, _r, _p, _se = sp_stats.linregress(x, y)
+    slope: float = float(_s)  # type: ignore[arg-type]
+    intercept: float = float(_i)  # type: ignore[arg-type]
+    r_value: float = float(_r)  # type: ignore[arg-type]
+    p_value: float = float(_p)  # type: ignore[arg-type]
+    std_err: float = float(_se)  # type: ignore[arg-type]
     fitted = intercept + slope * x
     return {
         "slope": slope,
@@ -66,13 +71,13 @@ def fit_polynomial_trend(df: pd.DataFrame, metric: str, degree: int = 2):
     dict
         Keys: coefficients, r_squared, fitted, time_idx.
     """
-    y = df[metric].values
+    y = np.asarray(df[metric].values, dtype=float)
     x = np.arange(len(y))
     coeffs = np.polyfit(x, y, degree)
     poly = np.poly1d(coeffs)
     fitted = poly(x)
-    ss_res = np.sum((y - fitted) ** 2)
-    ss_tot = np.sum((y - np.mean(y)) ** 2)
+    ss_res = float(np.sum((y - fitted) ** 2))
+    ss_tot = float(np.sum((y - np.mean(y)) ** 2))
     r_squared = 1 - ss_res / ss_tot if ss_tot != 0 else 0.0
     return {
         "coefficients": coeffs,
@@ -135,7 +140,9 @@ def mann_kendall_test(series: pd.Series):
         }
     except ImportError:
         x = np.arange(len(series))
-        tau, p_value = sp_stats.kendalltau(x, series.values)
+        _tau, _pval = sp_stats.kendalltau(x, series.values)
+        tau: float = float(_tau)  # type: ignore[arg-type]
+        p_value: float = float(_pval)  # type: ignore[arg-type]
         trend = "increasing" if tau > 0 else ("decreasing" if tau < 0 else "no trend")
         return {
             "trend": trend,
