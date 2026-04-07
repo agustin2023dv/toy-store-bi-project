@@ -103,4 +103,4 @@ Forecast plots saved to `graphs/`.
 2. **Anomaly monitoring**: Implement **IQR-based alerts** for production dashboards — good balance of sensitivity and specificity. Use Isolation Forest for periodic deep analysis.
 3. **Seasonality**: Account for strong weekly patterns in any forecasting or A/B testing design.
 4. **Data quality**: Extreme RPS values on low-traffic days should be flagged and potentially winsorized for reporting.
-5. **Next steps**: Consider ensemble forecasting (combining SARIMA + XGBoost) and causal impact analysis around detected anomaly dates.
+

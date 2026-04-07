@@ -5,7 +5,11 @@ Utility functions for stationarity testing, forecasting models,
 and anomaly detection on daily time-series data.
 """
 
+from __future__ import annotations
+
 import warnings
+from typing import Literal
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -39,21 +43,22 @@ def adf_test(series, name="series"):
     dict with test_statistic, p_value, used_lag, n_obs, critical_values, stationary (bool).
     """
     result = adfuller(series.dropna(), autolag="AIC")
-    stationary = result[1] < 0.05
+    adf_stat, adf_pvalue, adf_usedlag, adf_nobs, adf_critvals, *_ = result  # type: ignore[misc]
+    stationary = adf_pvalue < 0.05
     return {
         "test": "ADF",
         "metric": name,
-        "test_statistic": result[0],
-        "p_value": result[1],
-        "used_lag": result[2],
-        "n_obs": result[3],
-        "critical_values": result[4],
+        "test_statistic": adf_stat,
+        "p_value": adf_pvalue,
+        "used_lag": adf_usedlag,
+        "n_obs": adf_nobs,
+        "critical_values": adf_critvals,
         "stationary": stationary,
         "conclusion": "Stationary" if stationary else "Non-stationary",
     }
 
 
-def kpss_test(series, name="series", regression="c"):
+def kpss_test(series, name="series", regression: Literal["c", "ct"] = "c"):
     """Run the KPSS test (null: series IS stationary).
 
     Parameters
@@ -146,7 +151,7 @@ def plot_stationarity(series, diff1, diff2, name, save_dir="graphs"):
         plot_acf(data, ax=axes[i, 1], lags=40, title=f"ACF — {title}")
         plot_pacf(data, ax=axes[i, 2], lags=40, title=f"PACF — {title}")
 
-    plt.tight_layout(rect=[0, 0, 1, 0.96])
+    plt.tight_layout(rect=(0, 0, 1, 0.96))
     plt.savefig(f"{save_dir}/stationarity_{name.lower().replace(' ', '_')}.png",
                 dpi=150, bbox_inches="tight")
     plt.show()
@@ -199,8 +204,8 @@ def fit_sarima(train, test, order=(1, 1, 1), seasonal_order=(1, 1, 1, 7)):
     """
     model = SARIMAX(train, order=order, seasonal_order=seasonal_order,
                     enforce_stationarity=False, enforce_invertibility=False)
-    fitted = model.fit(disp=False, maxiter=200)
-    forecast = fitted.forecast(steps=len(test))
+    fitted = model.fit(disp=False, maxiter=200)  # type: ignore[union-attr]
+    forecast = fitted.get_forecast(steps=len(test)).predicted_mean  # type: ignore[union-attr]
     forecast.index = test.index
     metrics = compute_metrics(test, forecast)
     return {"model": fitted, "forecast": forecast, "metrics": metrics}
@@ -255,8 +260,8 @@ def fit_prophet(train, test):
     df_train = train.reset_index()
     df_train.columns = ["ds", "y"]
 
-    m = Prophet(daily_seasonality=False, weekly_seasonality=True,
-                yearly_seasonality=True)
+    m = Prophet(daily_seasonality="false", weekly_seasonality="true",
+                yearly_seasonality="true")
     m.fit(df_train)
 
     future = pd.DataFrame({"ds": test.index})
@@ -379,12 +384,13 @@ def detect_anomalies_zscore(series, threshold=3):
     -------
     pd.DataFrame with date, value, z_score for flagged points.
     """
-    z = stats.zscore(series.dropna())
-    z_series = pd.Series(z, index=series.dropna().index)
+    clean = series.dropna()
+    z = np.asarray(stats.zscore(clean))
+    z_series = pd.Series(z, index=clean.index)
     mask = z_series.abs() > threshold
     anomalies = pd.DataFrame({
-        "date": series.dropna().index[mask],
-        "value": series.dropna().values[mask],
+        "date": clean.index[mask],
+        "value": clean.values[mask],
         "z_score": z_series[mask].values,
         "method": "Z-score",
     })
